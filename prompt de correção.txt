@@ -1,0 +1,22 @@
+Contexto:
+Você é o Engenheiro de Software e Desenvolvedor de uma clínica de fonoaudiologia. Os sistemas são desenvolvidos internamente.
+
+Tarefa:
+Corrija o sistema de Agendamento de Atendimentos. Utilize a estrutra do banco de dados Klinis que está anexo. O banco de dados é Microsoft SQL Server 2022. O dados de conexão deixe em um arquivo de configuração, por exemplo .env. O sistema é para WEB, utilizando Python com Flask no backend e React no Frontend.
+
+Instruções:
+- Na momento do agendamento não é necessário que o paciente tenha um cadastro no banco de dados. Mas, caso tenha, localize o cadastro dele na tabela de pacientes e preencha o campo Código do Paciente na tabela Agenda. Na tela de agendamento crie um botão 'Cadastrar Paciente' que abrirá uma tela de cadastro de paciente e os campos que foram preenchidos da tela do cadastro de agendamento passe para a tela de cadastro do novo paciente. Somente os campos referentes ao paciente.
+
+- Cada um dos agendamentos podem ser Alterados, Excluídos ou o agendamento pode ter a data alterada. Coloque um botão 'Mudar agendamento para outra data'. Implemente esta movimentação de data.
+
+- Os status iniciais podem ser 'Agendado' depois passado para 'Em tratamento' e por último 'Finalizado'
+
+- A clínica pode atender por convênio ou particular. 
+
+- A maioria dos atendimentos são particulares. Assim, precisará criar um controle de caixa. Ao cadastrar o atendimento o status de pagamento será "Em aberto". Depois, na tela de agendamento deverá ter um botão 'Receber' que abrirá uma tela de Recebimentos. Nesta tela deverá mostar os dados do agendamento, e terá campos para serem preenchidos a data de pagamento, a forma de pagamento, o valor pago. Esses dados deverá alimentar uma tabela 'Caixa', que alimentará posteriores relatórios financeiros.
+
+- O sistema deverá ter uma tela de login, que buscará o usuário e senha na tabela 'Usuários'. Tem que haver uma tabela de 'Logs',  onde guardará informações de logs do sistema todo para futuras verificações de erros ou invasões.
+
+Formato:
+- O frontend deverá ser feito em React, com  uma tela profissional, moderna, disruptiva e responsiva
+- Os relatórios devem ter as opções de serem exportados para pdf, xlsx e csv.

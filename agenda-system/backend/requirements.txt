@@ -1,0 +1,10 @@
+Flask==3.0.3
+Flask-CORS==5.0.0
+Flask-SQLAlchemy==3.1.1
+pymssql==2.3.13 
+python-dotenv==1.0.1
+Flask-JWT-Extended==4.6.0
+reportlab==4.2.2  # PDF
+openpyxl==3.1.5   # XLSX
+pandas --prefer-binary     # CSV/exports
+Werkzeug==3.0.3

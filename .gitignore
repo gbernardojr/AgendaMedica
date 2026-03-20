@@ -1,0 +1,7 @@
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+node_modules/
+db/
