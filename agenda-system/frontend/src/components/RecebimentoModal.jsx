@@ -65,7 +65,16 @@ const RecebimentoModal = ({ open, onClose, fetchData, ag }) => {
       onClose();
     } catch (err) {
       console.error('Erro recebimento:', err);
-      const msg = err.response?.data?.msg || err.message || 'Erro ao processar recebimento';
+      const data = err.response?.data;
+      let msg = data?.msg;
+      if (!msg && data?.errors) {
+        msg = Object.entries(data.errors)
+          .map(([field, errs]) => `${field}: ${Array.isArray(errs) ? errs.join(', ') : errs}`)
+          .join('\n');
+      }
+      if (!msg && data?.title) msg = data.title;
+      if (!msg && typeof data === 'string') msg = data;
+      msg = msg || err.message || 'Erro ao processar recebimento';
       alert(msg);
     }
   };
