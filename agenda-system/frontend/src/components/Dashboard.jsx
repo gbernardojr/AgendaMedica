@@ -17,11 +17,12 @@ import axios from 'axios';
 import AgendamentoModal from './AgendamentoModal';
 import RecebimentoModal from './RecebimentoModal';
 import PacienteModal from './PacienteModal';
+import ReportsModal from './ReportsModal';
 
 const generateTimeSlots = () => {
   const slots = [];
   for (let h = 7; h <= 19; h++) {
-    for (let m = 0; m < 60; m += 15) {
+    for (let m = 0; m < 60; m += 10) {
       if (h === 19 && m > 0) break;
       slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
     }
@@ -33,8 +34,11 @@ const TIME_SLOTS = generateTimeSlots();
 
 const STATUS_COLORS = {
   1: { bg: '#eff6ff', border: '#3b82f6', text: '#1d4ed8', label: 'Agendado' },
-  2: { bg: '#fffbeb', border: '#f59e0b', text: '#b45309', label: 'Em atendimento' },
-  3: { bg: '#f0fdf4', border: '#22c55e', text: '#15803d', label: 'Finalizado' },
+  2: { bg: '#fffbeb', border: '#f59e0b', text: '#b45309', label: 'Aguardando' },
+  3: { bg: '#fdf4ff', border: '#a855f7', text: '#7e22ce', label: 'Em Atendimento' },
+  4: { bg: '#f0fdf4', border: '#22c55e', text: '#15803d', label: 'Finalizado' },
+  5: { bg: '#fef2f2', border: '#ef4444', text: '#dc2626', label: 'Faltou' },
+  6: { bg: '#f3f4f6', border: '#6b7280', text: '#4b5563', label: 'Cancelado' },
 };
 
 const Dashboard = ({ user }) => {
@@ -48,18 +52,33 @@ const Dashboard = ({ user }) => {
   const [openAg, setOpenAg] = useState(false);
   const [openRec, setOpenRec] = useState(false);
   const [openPac, setOpenPac] = useState(false);
+  const [openReports, setOpenReports] = useState(false);
   const [selectedAg, setSelectedAg] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [pacientePreFill, setPacientePreFill] = useState(null);
 
+  useEffect(() => {
+    sessionStorage.setItem('selectedProfissional', selectedProfissional);
+  }, [selectedProfissional]);
+
   const fetchProfissionais = async () => {
     try {
-      const resp = await axios.get('/profissionais');
+      const resp = await axios.get('/api/profissionais');
       setProfissionais(resp.data);
-      // Removed auto-selection to allow "Todas as Agendas" by default if multiple
-      // if (resp.data.length > 0 && !selectedProfissional) {
-      //   setSelectedProfissional(resp.data[0].crm);
-      // }
+
+      const savedProf = sessionStorage.getItem('selectedProfissional');
+      if (savedProf && resp.data.length > 0) {
+        const hasProf = resp.data.some(p => p.crm === savedProf);
+        if (hasProf) {
+          setSelectedProfissional(savedProf);
+        } else if (resp.data.length > 0) {
+          setSelectedProfissional(resp.data[0].crm);
+          sessionStorage.setItem('selectedProfissional', resp.data[0].crm);
+        }
+      } else if (resp.data.length > 0) {
+        setSelectedProfissional(resp.data[0].crm);
+        sessionStorage.setItem('selectedProfissional', resp.data[0].crm);
+      }
     } catch (err) {
       console.error('Erro buscar prof:', err);
     }
@@ -71,10 +90,11 @@ const Dashboard = ({ user }) => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       let url = `/agendamentos?data=${dateStr}`;
       if (selectedProfissional) url += `&profissional_crm=${selectedProfissional}`;
-      const resp = await axios.get(url);
+      const resp = await axios.get('/api' + url);
+      console.log('Agendamentos retornados:', resp.data);
       setAgendamentos(resp.data);
     } catch (err) {
-      console.error('Erro buscar agendamentos:', err);
+      console.error('Erro buscar agendamentos:', err.response?.data || err.message);
     } finally {
       setLoading(false);
     }
@@ -96,9 +116,8 @@ const Dashboard = ({ user }) => {
 
   const handleDoubleClickRow = (time) => {
     const ag = agByTime[time];
-    if (ag) { setSelectedAg(ag); setSelectedSlot(null); }
-    else { setSelectedAg(null); setSelectedSlot(time); }
-    setOpenAg(true);
+    if (ag) { setSelectedAg(ag); setSelectedSlot(null); setOpenAg(true); }
+    else if (selectedProfissional) { setSelectedAg(null); setSelectedSlot(time); setOpenAg(true); }
   };
 
   const handleExport = async (fmt) => {
@@ -109,8 +128,8 @@ const Dashboard = ({ user }) => {
 
     try {
       setLoading(true);
-      const resp = await axios.get(url, { responseType: 'blob' });
-      
+      const resp = await axios.get('/api' + url, { responseType: 'blob' });
+
       // Criar um link temporário para o download
       const blob = new Blob([resp.data], { type: resp.headers['content-type'] });
       const blobUrl = window.URL.createObjectURL(blob);
@@ -119,7 +138,7 @@ const Dashboard = ({ user }) => {
       link.setAttribute('download', `relatorio_${dateStr}.${fmt}`);
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
@@ -146,7 +165,7 @@ const Dashboard = ({ user }) => {
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>Agenda</Typography>
           <Typography variant="body2" sx={{ color: '#64748b' }}>Gerenciamento clínico de atendimentos</Typography>
         </Box>
-        
+
         <TextField
           select
           size="small"
@@ -156,7 +175,6 @@ const Dashboard = ({ user }) => {
           sx={{ minWidth: 260, '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: 'white' } }}
           InputProps={{ startAdornment: <CalendarIcon size={16} style={{ marginRight: 8, color: '#2563eb' }} /> }}
         >
-          <MenuItem value="">Todas as Agendas (Visão Geral)</MenuItem>
           {profissionais.map((p) => (
             <MenuItem key={p.crm} value={p.crm}>Agenda: {p.nome}</MenuItem>
           ))}
@@ -196,28 +214,27 @@ const Dashboard = ({ user }) => {
         </Stack>
 
         <Stack direction="row" spacing={1.5}>
-          <Button
-            variant="contained"
-            startIcon={<Plus size={18} />}
-            disabled={!user?.perms?.agenda}
-            onClick={() => { setSelectedAg(null); setSelectedSlot(null); setOpenAg(true); }}
-            sx={{ borderRadius: 2, bgcolor: user?.perms?.agenda ? '#2563eb' : '#94a3b8' }}
-          >
-            Novo Agendamento
-          </Button>
+          <Tooltip title={!selectedProfissional ? 'Selecione um profissional primeiro' : !user?.perms?.agenda ? 'Sem permissão' : ''}>
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<Plus size={18} />}
+                disabled={!user?.perms?.agenda || !selectedProfissional}
+                onClick={() => { setSelectedAg(null); setSelectedSlot(null); setOpenAg(true); }}
+                sx={{ borderRadius: 2, bgcolor: (!user?.perms?.agenda || !selectedProfissional) ? '#94a3b8' : '#2563eb' }}
+              >
+                Novo Agendamento
+              </Button>
+            </span>
+          </Tooltip>
           <Button
             variant="outlined"
             startIcon={<Download size={18} />}
-            onClick={(e) => setAnchorElExport(e.currentTarget)}
+            onClick={() => setOpenReports(true)}
             sx={{ borderRadius: 2 }}
           >
             Relatórios
           </Button>
-          <Menu anchorEl={anchorElExport} open={Boolean(anchorElExport)} onClose={() => setAnchorElExport(null)}>
-            <MenuItem onClick={() => handleExport('pdf')}>Exportar PDF</MenuItem>
-            <MenuItem onClick={() => handleExport('xlsx')}>Exportar Excel</MenuItem>
-            <MenuItem onClick={() => handleExport('csv')}>Exportar CSV</MenuItem>
-          </Menu>
         </Stack>
       </Box>
 
@@ -269,9 +286,6 @@ const Dashboard = ({ user }) => {
                         {ag ? (
                           <Box>
                             <Typography variant="body2" fontWeight={600}>{ag.ag_nome}</Typography>
-                            {!ag.ag_codpaciente && user?.perms?.clientes && (
-                              <Button size="small" sx={{ p:0, fontSize:'0.7rem', textTransform:'none', color:'#f59e0b'}} onClick={(e)=>{e.stopPropagation(); setPacientePreFill({nome:ag.ag_nome}); setOpenPac(true);}}>+ Cadastrar paciente</Button>
-                            )}
                           </Box>
                         ) : ''}
                       </TableCell>
@@ -280,11 +294,11 @@ const Dashboard = ({ user }) => {
                           {ag ? (profissionais.find(p => p.crm === ag.ag_codmedico)?.nome || 'Não definido') : ''}
                         </TableCell>
                       )}
-                      <TableCell sx={{ fontSize: '0.8rem' }}>{ag?.ag_observacao || ''}</TableCell>
+                      <TableCell sx={{ fontSize: '0.8rem' }}>{ag?.ag_obs || ''}</TableCell>
                       <TableCell sx={{ fontSize: '0.8rem' }}>{ag?.ag_convenio || ''}</TableCell>
                       <TableCell>{ag && <Chip label={sc.label} size="small" sx={{ fontSize: '0.7rem', height: 22, color: sc.text, border: `1px solid ${sc.border}`, bgcolor: 'transparent' }} />}</TableCell>
                       <TableCell>{ag && <Chip label={ag.ag_pago ? "Pago" : "Pendente"} size="small" variant="outlined" color={ag.ag_pago ? "success" : "warning"} sx={{ fontSize: '0.7rem', height: 22 }} />}</TableCell>
-                      <TableCell align="center">{ag && !ag.ag_pago && user?.perms?.agenda && <IconButton size="small" color="success" onClick={(e)=>{e.stopPropagation(); setSelectedAg(ag); setOpenRec(true);}}><DollarSign size={14} /></IconButton>}</TableCell>
+                      <TableCell align="center">{ag && !ag.ag_pago && user?.perms?.agenda && <IconButton size="small" color="success" onClick={(e) => { e.stopPropagation(); setSelectedAg(ag); setOpenRec(true); }}><DollarSign size={14} /></IconButton>}</TableCell>
                     </TableRow>
                   );
                 })
@@ -294,9 +308,10 @@ const Dashboard = ({ user }) => {
         </TableContainer>
       </Paper>
 
-      {openAg && <AgendamentoModal open={openAg} onClose={()=>{setOpenAg(false);setSelectedAg(null);setSelectedSlot(null);}} fetchData={fetchAgendamentos} selectedDate={selectedDate} editAg={selectedAg} preFilledTime={selectedSlot} selectedProfissional={selectedProfissional} user={user} />}
-      {openRec && <RecebimentoModal open={openRec} onClose={()=>{setOpenRec(false);setSelectedAg(null);}} fetchData={fetchAgendamentos} ag={selectedAg} />}
-      {openPac && <PacienteModal open={openPac} onClose={()=>setOpenPac(false)} preFill={pacientePreFill} fetchData={fetchAgendamentos} />}
+      {openAg && <AgendamentoModal open={openAg} onClose={() => { setOpenAg(false); setSelectedAg(null); setSelectedSlot(null); }} fetchData={fetchAgendamentos} selectedDate={selectedDate} editAg={selectedAg} preFilledTime={selectedSlot} selectedProfissional={selectedProfissional} user={user} />}
+      {openRec && <RecebimentoModal open={openRec} onClose={() => { setOpenRec(false); setSelectedAg(null); }} fetchData={fetchAgendamentos} ag={selectedAg} />}
+      {openPac && <PacienteModal open={openPac} onClose={() => setOpenPac(false)} preFill={pacientePreFill} fetchData={fetchAgendamentos} />}
+      {openReports && <ReportsModal open={openReports} onClose={() => setOpenReports(false)} profissionais={profissionais} />}
     </Box>
   );
 };

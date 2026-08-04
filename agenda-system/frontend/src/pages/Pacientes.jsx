@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, 
   TableHead, TableRow, Button, IconButton, TextField, Dialog, 
-  DialogTitle, DialogContent, DialogActions, Grid, Tooltip, InputAdornment 
+  DialogTitle, DialogContent, DialogActions, Grid, Tooltip, InputAdornment, MenuItem 
 } from '@mui/material';
-import { Plus, Search, Edit2, Trash2, User } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, User, Phone, Mail, MapPin } from 'lucide-react';
 import axios from 'axios';
+
+const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 
 const Pacientes = () => {
   const [pacientes, setPacientes] = useState([]);
@@ -13,12 +15,15 @@ const Pacientes = () => {
   const [open, setOpen] = useState(false);
   const [selectedPaciente, setSelectedPaciente] = useState(null);
   const [formData, setFormData] = useState({
-    pac_nome: '', pac_telefone: '', pac_email: '', pac_sexo: 'M'
+    pac_nome: '', pac_sexo: 'M', pac_nascimento: '', pac_cpf: '', pac_rg: '',
+    pac_endereco: '', pac_numero: '', pac_complemento: '', pac_bairro: '',
+    pac_cidade: '', pac_estado: '', pac_cep: '', pac_telefone: '', pac_celular: '',
+    pac_email: '', pac_nomemae: '', pac_obs: ''
   });
 
   const fetchPacientes = async () => {
     try {
-      const res = await axios.get(`/pacientes?q=${searchTerm}`);
+      const res = await axios.get(`/api/pacientes?q=${searchTerm}`);
       setPacientes(res.data);
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
@@ -33,14 +38,32 @@ const Pacientes = () => {
     if (pac) {
       setSelectedPaciente(pac);
       setFormData({
-        pac_nome: pac.nome,
+        pac_nome: pac.nome || '',
+        pac_sexo: pac.pac_sexo || 'M',
+        pac_nascimento: pac.pac_nascimento || '',
+        pac_cpf: pac.pac_cpf || '',
+        pac_rg: pac.pac_rg || '',
+        pac_endereco: pac.pac_endereco || '',
+        pac_numero: pac.pac_numero || '',
+        pac_complemento: pac.pac_complemento || '',
+        pac_bairro: pac.pac_bairro || '',
+        pac_cidade: pac.pac_cidade || '',
+        pac_estado: pac.pac_estado || '',
+        pac_cep: pac.pac_cep || '',
         pac_telefone: pac.tel || '',
+        pac_celular: pac.pac_celular || '',
         pac_email: pac.email || '',
-        pac_sexo: pac.sexo || 'M'
+        pac_nomemae: pac.pac_nomemae || '',
+        pac_obs: pac.pac_obs || ''
       });
     } else {
       setSelectedPaciente(null);
-      setFormData({ pac_nome: '', pac_telefone: '', pac_email: '', pac_sexo: 'M' });
+      setFormData({
+        pac_nome: '', pac_sexo: 'M', pac_nascimento: '', pac_cpf: '', pac_rg: '',
+        pac_endereco: '', pac_numero: '', pac_complemento: '', pac_bairro: '',
+        pac_cidade: '', pac_estado: '', pac_cep: '', pac_telefone: '', pac_celular: '',
+        pac_email: '', pac_nomemae: '', pac_obs: ''
+      });
     }
     setOpen(true);
   };
@@ -48,9 +71,9 @@ const Pacientes = () => {
   const handleSave = async () => {
     try {
       if (selectedPaciente) {
-        await axios.put(`/pacientes/${selectedPaciente.id}`, formData);
+        await axios.put(`/api/pacientes/${selectedPaciente.id}`, formData);
       } else {
-        await axios.post('/pacientes', formData);
+        await axios.post('/api/pacientes', formData);
       }
       setOpen(false);
       fetchPacientes();
@@ -62,12 +85,16 @@ const Pacientes = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir este paciente?')) {
       try {
-        await axios.delete(`/pacientes/${id}`);
+        await axios.delete(`/api/pacientes/${id}`);
         fetchPacientes();
       } catch (error) {
         alert('Erro ao excluir');
       }
     }
+  };
+
+  const handleChange = (field) => (e) => {
+    setFormData({ ...formData, [field]: e.target.value });
   };
 
   return (
@@ -98,7 +125,7 @@ const Pacientes = () => {
         <Box sx={{ p: 3, borderBottom: '1px solid #e2e8f0' }}>
           <TextField
             fullWidth
-            placeholder="Buscar por nome ou telefone..."
+            placeholder="Buscar por nome, CPF ou telefone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
@@ -117,7 +144,9 @@ const Pacientes = () => {
             <TableHead sx={{ bgcolor: '#f8fafc' }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600, color: '#64748b' }}>Nome</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#64748b' }}>CPF</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#64748b' }}>Telefone</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: '#64748b' }}>Celular</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#64748b' }}>E-mail</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600, color: '#64748b' }}>Ações</TableCell>
               </TableRow>
@@ -135,8 +164,20 @@ const Pacientes = () => {
                       </Typography>
                     </Box>
                   </TableCell>
-                  <TableCell sx={{ color: '#64748b' }}>{pac.tel || '-'}</TableCell>
-                  <TableCell sx={{ color: '#64748b' }}>{pac.email || '-'}</TableCell>
+                  <TableCell sx={{ color: '#64748b' }}>{pac.pac_cpf || '-'}</TableCell>
+                  <TableCell sx={{ color: '#64748b' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Phone size={14} color="#94a3b8" />
+                      {pac.tel || '-'}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ color: '#64748b' }}>{pac.pac_celular || '-'}</TableCell>
+                  <TableCell sx={{ color: '#64748b' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Mail size={14} color="#94a3b8" />
+                      {pac.email || '-'}
+                    </Box>
+                  </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Editar">
                       <IconButton onClick={() => handleOpen(pac)} size="small" sx={{ color: '#3b82f6' }}>
@@ -153,7 +194,7 @@ const Pacientes = () => {
               ))}
               {pacientes.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} align="center" sx={{ py: 4, color: '#94a3b8' }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 4, color: '#94a3b8' }}>
                     Nenhum paciente encontrado.
                   </TableCell>
                 </TableRow>
@@ -163,32 +204,72 @@ const Pacientes = () => {
         </TableContainer>
       </Paper>
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
         <DialogTitle sx={{ fontWeight: 700 }}>
           {selectedPaciente ? 'Editar Cliente' : 'Novo Cliente'}
         </DialogTitle>
         <DialogContent dividers>
           <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid item xs={12} sm={8}>
+              <TextField fullWidth label="Nome Completo" value={formData.pac_nome} onChange={handleChange('pac_nome')} required />
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField select fullWidth label="Sexo" value={formData.pac_sexo} onChange={handleChange('pac_sexo')}>
+                <MenuItem value="M">Masculino</MenuItem>
+                <MenuItem value="F">Feminino</MenuItem>
+              </TextField>
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField fullWidth label="Nascimento" type="date" value={formData.pac_nascimento} onChange={handleChange('pac_nascimento')} InputLabelProps={{ shrink: true }} />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="CPF" value={formData.pac_cpf} onChange={handleChange('pac_cpf')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="RG" value={formData.pac_rg} onChange={handleChange('pac_rg')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Nome da Mãe" value={formData.pac_nomemae} onChange={handleChange('pac_nomemae')} />
+            </Grid>
+
+            <Grid item xs={12} sm={8}>
+              <TextField fullWidth label="Endereço" value={formData.pac_endereco} onChange={handleChange('pac_endereco')} />
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField fullWidth label="Número" value={formData.pac_numero} onChange={handleChange('pac_numero')} />
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField fullWidth label="Complemento" value={formData.pac_complemento} onChange={handleChange('pac_complemento')} />
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Bairro" value={formData.pac_bairro} onChange={handleChange('pac_bairro')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="Cidade" value={formData.pac_cidade} onChange={handleChange('pac_cidade')} />
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField select fullWidth label="Estado" value={formData.pac_estado} onChange={handleChange('pac_estado')}>
+                {UFS.map(uf => <MenuItem key={uf} value={uf}>{uf}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid item xs={6} sm={2}>
+              <TextField fullWidth label="CEP" value={formData.pac_cep} onChange={handleChange('pac_cep')} />
+            </Grid>
+
+            <Grid item xs={6} sm={4}>
+              <TextField fullWidth label="Telefone" value={formData.pac_telefone} onChange={handleChange('pac_telefone')} />
+            </Grid>
+            <Grid item xs={6} sm={4}>
+              <TextField fullWidth label="Celular" value={formData.pac_celular} onChange={handleChange('pac_celular')} />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField fullWidth label="E-mail" type="email" value={formData.pac_email} onChange={handleChange('pac_email')} />
+            </Grid>
+
             <Grid item xs={12}>
-              <TextField 
-                fullWidth label="Nome Completo" 
-                value={formData.pac_nome} 
-                onChange={(e) => setFormData({...formData, pac_nome: e.target.value})}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField 
-                fullWidth label="Telefone" 
-                value={formData.pac_telefone} 
-                onChange={(e) => setFormData({...formData, pac_telefone: e.target.value})}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField 
-                fullWidth label="E-mail" 
-                value={formData.pac_email} 
-                onChange={(e) => setFormData({...formData, pac_email: e.target.value})}
-              />
+              <TextField fullWidth label="Observação" multiline rows={3} value={formData.pac_obs} onChange={handleChange('pac_obs')} />
             </Grid>
           </Grid>
         </DialogContent>

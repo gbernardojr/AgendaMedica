@@ -15,7 +15,7 @@ const ProfissionaisPage = () => {
 
   const fetchProfissionais = async () => {
     try {
-      const res = await axios.get('/profissionais');
+      const res = await axios.get('/api/profissionais');
       setProfissionais(res.data);
     } catch (error) {
       console.error('Erro ao buscar profissionais:', error);
@@ -39,10 +39,11 @@ const ProfissionaisPage = () => {
 
   const handleSave = async () => {
     try {
+      const data = { med_crm: formData.crm, med_nome: formData.nome };
       if (selectedProf) {
-        await axios.put(`/profissionais/${selectedProf.crm}`, { nome: formData.nome });
+        await axios.put(`/api/profissionais/${selectedProf.crm}`, { med_nome: formData.nome });
       } else {
-        await axios.post('/profissionais', formData);
+        await axios.post('/api/profissionais', data);
       }
       setOpen(false);
       fetchProfissionais();
@@ -54,7 +55,7 @@ const ProfissionaisPage = () => {
   const handleDelete = async (crm) => {
     if (window.confirm('Deseja realmente excluir este profissional?')) {
       try {
-        await axios.delete(`/profissionais/${crm}`);
+        await axios.delete(`/api/profissionais/${crm}`);
         fetchProfissionais();
       } catch (error) {
         alert('Erro ao excluir');

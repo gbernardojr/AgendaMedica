@@ -10,10 +10,24 @@ import { format } from 'date-fns';
 
 const CONVENIOS = ['Particular', 'Unimed', 'Bradesco', 'Amil', 'SUS', 'Outro'];
 
+const TIPO_CONSULTA_OPTIONS = [
+  { value: 'C', label: 'Consulta' },
+  { value: 'P', label: 'Primeira Vez' },
+  { value: 'R', label: 'Retorno' },
+];
+
 const STATUS_OPTIONS = [
   { value: 1, label: 'Agendado' },
-  { value: 2, label: 'Em atendimento' },
-  { value: 3, label: 'Finalizado' },
+  { value: 2, label: 'Aguardando' },
+  { value: 3, label: 'Em Atendimento' },
+  { value: 4, label: 'Finalizado' },
+  { value: 5, label: 'Faltou' },
+  { value: 6, label: 'Cancelado' },
+];
+
+const LOCALIZACAO_OPTIONS = [
+  { value: 'S', label: 'Sala Branca' },
+  { value: 'D', label: 'Em Domicílio' },
 ];
 
 const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preFilledTime, selectedProfissional, user }) => {
@@ -25,6 +39,8 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
     ag_observacao: '',
     ag_status: 1,
     ag_codmedico: selectedProfissional || '',
+    ag_tipoconsulta: 'C',
+    ag_localizacao: 'S',
   };
 
   const [formData, setFormData] = useState(defaultData);
@@ -40,9 +56,11 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
         ag_hora: editAg.ag_hora ? String(editAg.ag_hora).substring(0, 5) : '08:00',
         ag_nome: editAg.ag_nome || '',
         ag_convenio: editAg.ag_convenio || 'Particular',
-        ag_observacao: editAg.ag_observacao || '',
+        ag_observacao: editAg.ag_obs || '',
         ag_status: editAg.ag_status || 1,
         ag_codmedico: editAg.ag_codmedico || selectedProfissional || '',
+        ag_tipoconsulta: editAg.ag_tipoconsulta || 'C',
+        ag_localizacao: editAg.ag_localizacao || 'S',
       });
     } else {
       setFormData({
@@ -63,7 +81,7 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
     set('ag_nome', val);
     if (val.length >= 3) {
       try {
-        const resp = await axios.get(`/pacientes?q=${encodeURIComponent(val)}`);
+        const resp = await axios.get(`/api/pacientes?q=${encodeURIComponent(val)}`);
         setPacientesOptions(resp.data);
       } catch {
         setPacientesOptions([]);
@@ -81,10 +99,11 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
 
     setSalvando(true);
     try {
+      console.log('[DEBUG] Sending formData:', formData);
       if (editAg) {
-        await axios.put(`/agendamentos/${editAg.ag_codigo}`, formData);
+        await axios.put(`/api/agendamentos/${editAg.ag_codigo}`, formData);
       } else {
-        await axios.post('/agendamentos', formData);
+        await axios.post('/api/agendamentos', formData);
       }
       fetchData();
       onClose();
@@ -100,7 +119,7 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
     if (!window.confirm(`Liberar o horário de ${editAg.ag_hora} – ${editAg.ag_nome}?\nEsta ação não pode ser desfeita.`)) return;
     setDeletando(true);
     try {
-      await axios.delete(`/agendamentos/${editAg.ag_codigo}`);
+      await axios.delete(`/api/agendamentos/${editAg.ag_codigo}`);
       fetchData();
       onClose();
     } catch {
@@ -174,12 +193,12 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
               value={formData.ag_hora}
               onChange={(e) => set('ag_hora', e.target.value)}
               InputLabelProps={{ shrink: true }}
-              inputProps={{ step: 900 }} // step=900s (15 min)
+              inputProps={{ step: 600 }} // step=600s (10 min)
             />
           </Grid>
 
           {/* Convênio */}
-          <Grid item xs={editAg ? 6 : 12}>
+          <Grid item xs={4}>
             <TextField
               select
               label="Convênio"
@@ -189,6 +208,36 @@ const AgendamentoModal = ({ open, onClose, fetchData, selectedDate, editAg, preF
             >
               {CONVENIOS.map((c) => (
                 <MenuItem key={c} value={c}>{c}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {/* Tipo de Consulta */}
+          <Grid item xs={4}>
+            <TextField
+              select
+              label="Tipo da Consulta"
+              fullWidth
+              value={formData.ag_tipoconsulta}
+              onChange={(e) => set('ag_tipoconsulta', e.target.value)}
+            >
+              {TIPO_CONSULTA_OPTIONS.map((t) => (
+                <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          {/* Localização */}
+          <Grid item xs={4}>
+            <TextField
+              select
+              label="Localização"
+              fullWidth
+              value={formData.ag_localizacao}
+              onChange={(e) => set('ag_localizacao', e.target.value)}
+            >
+              {LOCALIZACAO_OPTIONS.map((l) => (
+                <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
               ))}
             </TextField>
           </Grid>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box } from '@mui/material';
 import theme from './theme';
@@ -13,10 +13,10 @@ import axios from 'axios';
 import './index.css';
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [token, setToken] = useState(() => sessionStorage.getItem('token'));
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('user');
+      const saved = sessionStorage.getItem('user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -24,21 +24,21 @@ function App() {
   });
 
   const handleLogin = (newToken, newUser) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    sessionStorage.setItem('token', newToken);
+    sessionStorage.setItem('user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setToken(null);
     setUser(null);
   };
 
-  useMemo(() => {
-    axios.defaults.baseURL = 'http://localhost:5000';
+  useEffect(() => {
+    axios.defaults.baseURL = '';
     axios.defaults.headers.common['Authorization'] = token ? `Bearer ${token}` : '';
 
     const interceptorId = axios.interceptors.response.use(
@@ -47,8 +47,8 @@ function App() {
         if (error.response && (error.response.status === 401 || error.response.status === 422)) {
           const isLoginEndpoint = error.config?.url?.includes('/login');
           if (!isLoginEndpoint) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            sessionStorage.removeItem('token');
+            sessionStorage.removeItem('user');
             if (window.location.pathname !== '/') window.location.href = '/';
           }
         }
@@ -62,7 +62,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Box sx={{ minHeight: '100vh' }}>
           <Routes>
             <Route 

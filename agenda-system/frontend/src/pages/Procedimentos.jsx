@@ -15,7 +15,7 @@ const Procedimentos = () => {
 
   const fetchProcedimentos = async () => {
     try {
-      const res = await axios.get('/procedimentos');
+      const res = await axios.get('/api/procedimentos');
       setProcedimentos(res.data);
     } catch (error) {
       console.error('Erro ao buscar procedimentos:', error);
@@ -40,9 +40,9 @@ const Procedimentos = () => {
   const handleSave = async () => {
     try {
       if (selectedProc) {
-        await axios.put(`/procedimentos/${selectedProc.id}`, formData);
+        await axios.put(`/api/procedimentos/${selectedProc.id}`, formData);
       } else {
-        await axios.post('/procedimentos', formData);
+        await axios.post('/api/procedimentos', formData);
       }
       setOpen(false);
       fetchProcedimentos();
@@ -54,7 +54,7 @@ const Procedimentos = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir este procedimento?')) {
       try {
-        await axios.delete(`/procedimentos/${id}`);
+        await axios.delete(`/api/procedimentos/${id}`);
         fetchProcedimentos();
       } catch (error) {
         alert('Erro ao excluir');

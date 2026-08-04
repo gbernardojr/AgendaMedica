@@ -22,7 +22,7 @@ const PacienteModal = ({ open, onClose, preFill, fetchData }) => {
 
   const handleSubmit = async () => {
     try {
-      await axios.post('/pacientes', formData);
+      await axios.post('/api/pacientes', formData);
       fetchData(); // Recarrega para vincular o agendamento ao novo paciente
       onClose();
     } catch (err) {

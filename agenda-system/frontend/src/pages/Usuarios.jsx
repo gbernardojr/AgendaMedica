@@ -19,7 +19,7 @@ const UsuariosPage = () => {
 
   const fetchUsuarios = async () => {
     try {
-      const res = await axios.get('/usuarios');
+      const res = await axios.get('/api/usuarios');
       setUsuarios(res.data);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -56,9 +56,9 @@ const UsuariosPage = () => {
   const handleSave = async () => {
     try {
       if (selectedUser) {
-        await axios.put(`/usuarios/${selectedUser.id}`, formData);
+        await axios.put(`/api/usuarios/${selectedUser.id}`, formData);
       } else {
-        await axios.post('/usuarios', formData);
+        await axios.post('/api/usuarios', formData);
       }
       setOpen(false);
       fetchUsuarios();
@@ -70,7 +70,7 @@ const UsuariosPage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Deseja realmente excluir este usuário?')) {
       try {
-        await axios.delete(`/usuarios/${id}`);
+        await axios.delete(`/api/usuarios/${id}`);
         fetchUsuarios();
       } catch (error) {
         alert(error.response?.data?.msg || 'Erro ao excluir');
